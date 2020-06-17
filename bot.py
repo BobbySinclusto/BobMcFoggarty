@@ -13,6 +13,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 SCRIPTS_PATH = os.getenv('SCRIPTS_PATH')
 SERVER_ADDRESS = os.getenv('SERVER_ADDRESS')
+SERVER_PORT = os.getenv('SERVER_PORT')
 
 current_world = open(SCRIPTS_PATH + 'currentworld.txt', 'r').read().strip();
 server_process = 0
@@ -69,7 +70,7 @@ async def startserver(ctx):
         
     server_process = subprocess.Popen(['java', '-Xmx1024M', '-Xms1024M', '-jar', 'server.jar', 'nogui'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE) 
     if SERVER_ADDRESS == None:
-        ngrok_process = subprocess.Popen([SCRIPTS_PATH + 'ngrok', 'tcp', '25565'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ngrok_process = subprocess.Popen([SCRIPTS_PATH + 'ngrok', 'tcp', str(SERVER_PORT)], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
             try:
                 time.sleep(2)
