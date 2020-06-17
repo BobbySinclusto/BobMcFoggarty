@@ -12,6 +12,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('DISCORD_GUILD')
 SCRIPTS_PATH = os.getenv('SCRIPTS_PATH')
+SERVER_ADDRESS = os.getenv('SERVER_ADDRESS')
 
 current_world = open(SCRIPTS_PATH + 'currentworld.txt', 'r').read().strip();
 server_process = 0
@@ -65,17 +66,21 @@ async def startserver(ctx):
         await ctx.send('The server is running already! Server address: ' + addr)
         return
     await ctx.send('Starting server...')
-    ngrok_process = subprocess.Popen([SCRIPTS_PATH + 'ngrok', 'tcp', '25565'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
     server_process = subprocess.Popen(['java', '-Xmx1024M', '-Xms1024M', '-jar', 'server.jar', 'nogui'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE) 
-    while True:
-        try:
-            time.sleep(2)
-            j = requests.get('http://127.0.0.1:4040/api/tunnels').json()
-            addr = j['tunnels'][0]['public_url'][6:]
-            await ctx.send('Success! Server address: ' + addr)
-            break
-        except:
-            pass
+    if SERVER_ADDRESS == None:
+        ngrok_process = subprocess.Popen([SCRIPTS_PATH + 'ngrok', 'tcp', '25565'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while True:
+            try:
+                time.sleep(2)
+                j = requests.get('http://127.0.0.1:4040/api/tunnels').json()
+                addr = j['tunnels'][0]['public_url'][6:]
+                break
+            except:
+                pass
+    else:
+        addr = SERVER_ADDRESS
+    await ctx.send('Success! Server address: ' + addr)
 
 @bot.command(name='currentworld', help='Displays the currently selected world')
 async def currentworld(ctx):
@@ -93,7 +98,8 @@ async def stopserver(ctx):
     global addr
     try:
         server_process.communicate(input=b'/stop\n')
-        ngrok_process.terminate()
+        if SERVER_ADDRESS == None:
+            ngrok_process.terminate()
         addr = ''
         await ctx.send('Server stopped.')
     except:
