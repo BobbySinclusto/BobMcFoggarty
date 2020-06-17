@@ -28,6 +28,8 @@ async def on_ready():
 
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
+    game = discord.Game('ngrok')
+    await bot.change_presence(status=discord.Status.online, activity=game)
 
 @bot.event
 async def on_member_join(member):
@@ -50,11 +52,11 @@ async def on_command_error(ctx, error):
     else:
         raise error
 
-@bot.command(name='ping')
+@bot.command(name='ping', help='pong!')
 async def ping(ctx):
     await ctx.send('pong!')
 
-@bot.command(name='startserver')
+@bot.command(name='startserver', help='Starts the server')
 async def startserver(ctx):
     global server_process
     global ngrok_process
@@ -75,18 +77,18 @@ async def startserver(ctx):
         except:
             pass
 
-@bot.command(name='currentworld')
+@bot.command(name='currentworld', help='Displays the currently selected world')
 async def currentworld(ctx):
     await ctx.send('Current world: ' + current_world)
 
-@bot.command(name='serveraddress')
+@bot.command(name='serveraddress', help='Displays the server address')
 async def serveraddress(ctx):
     if addr == '':
         await ctx.send('The server is not running yet. Use !startserver to start it!')
     else:
         await ctx.send(addr)
 
-@bot.command(name='stopserver')
+@bot.command(name='stopserver', help='Stops the server')
 async def stopserver(ctx):
     global addr
     try:
@@ -97,7 +99,7 @@ async def stopserver(ctx):
     except:
         await ctx.send('You can\'t stop a server that hasn\'t been started. Use !startserver to start the server!')
 
-@bot.command(name='resetworld')
+@bot.command(name='resetworld', help='Resets world to its original state')
 async def resetworld(ctx):
     global server_process
     await ctx.send('Resetting the world...')
@@ -117,7 +119,7 @@ async def resetworld(ctx):
     time.sleep(5)
     await ctx.send('Success! Server address: ' + addr)
 
-@bot.command(name='listworlds')
+@bot.command(name='listworlds', help='Lists the worlds that have been added')
 async def listworlds(ctx):
     p = subprocess.run(['ls', SCRIPTS_PATH + '../Worlds/'], stdout=subprocess.PIPE)
     msg = '```'
@@ -127,7 +129,7 @@ async def listworlds(ctx):
     msg += '```'
     await ctx.send(msg)
 
-@bot.command(name='selectworld')
+@bot.command(name='selectworld', help='Selects a world, by world name or world number. Use double quotes around a world name, or a world number from the list of worlds.')
 async def selectworld(ctx, world):
     global current_world
     p = subprocess.run(['ls', SCRIPTS_PATH + '../Worlds/'], stdout=subprocess.PIPE)
