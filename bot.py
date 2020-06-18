@@ -6,6 +6,7 @@ import requests
 import discord
 import json
 import time
+import random
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -16,7 +17,8 @@ SCRIPTS_PATH = os.getenv('SCRIPTS_PATH')
 SERVER_ADDRESS = os.getenv('SERVER_ADDRESS')
 SERVER_PORT = os.getenv('SERVER_PORT')
 
-current_world = open(SCRIPTS_PATH + 'currentworld.txt', 'r').read().strip();
+current_world = open(SCRIPTS_PATH + 'currentworld.txt', 'r').read().strip()
+funfacts = open('dyk.txt', 'r').readlines()
 server_process = 0
 ngrok_process = 0
 addr = ''
@@ -54,7 +56,7 @@ async def on_command_error(ctx, error):
         await ctx.send('Command not found. Type !help for list of commands.')
     else:
         await ctx.send('Error processing command. See !help for command usage instructions.')
-        raise error
+    await ctx.send('Did you know ' + random.choice(funfacts))
 
 @bot.command(name='ping', help='pong!')
 async def ping(ctx):
@@ -194,5 +196,7 @@ async def addworld(ctx, link):
         pass
     subprocess.run(['rm', '-rf', SCRIPTS_PATH + 'blorgle'])
 
-
+@bot.command(name='funfact', help='Displays a fun fact.')
+async def funfact(ctx):
+    await ctx.send('Did you know ' + random.choice(funfacts))
 bot.run(TOKEN)
