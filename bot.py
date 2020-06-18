@@ -53,6 +53,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.CommandNotFound):
         await ctx.send('Command not found. Type !help for list of commands.')
     else:
+        await ctx.send('Error processing command. See !help for command usage instructions.')
         raise error
 
 @bot.command(name='ping', help='pong!')
