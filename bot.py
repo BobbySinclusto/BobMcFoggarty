@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import re
 import requests
 import discord
 import json
@@ -158,5 +159,39 @@ async def selectworld(ctx, world):
         f.write(worlds[idx])
         await ctx.send('Selected world: ' + worlds[idx])
         await resetworld(ctx)
+        print('select world')
+
+@bot.command(name='addworld', help='Adds a world from a link to a zip file.')
+async def addworld(ctx, link):
+    await ctx.send('Attempting to download world...')
+    try:
+        subprocess.run(['mkdir', SCRIPTS_PATH + 'blorgle'])
+        r = requests.get(link, allow_redirects=True)
+        open(SCRIPTS_PATH + 'blorgle/download.zip', 'wb').write(r.content)
+        p = subprocess.run(['unzip', SCRIPTS_PATH + 'blorgle/download.zip'], cwd=SCRIPTS_PATH + 'blorgle/', stdout=subprocess.PIPE)
+        if p.returncode == 0:
+            world = ''
+            path = ''
+            output = p.stdout.decode('utf-8').split('\n')
+            for i in range(len(output)):
+                output[i] = output[i].strip()
+                match = re.compile('[/| ][^/]*/region').search(output[i])
+                if match != None:
+                    world = output[i][match.start() + 1 : match.end() - 7]
+                    path = SCRIPTS_PATH + 'blorgle/' + output[i][10:match.end() - 7].replace(' ', '\\ ').replace('\'', '\\\'')
+                    break
+            if world == '':
+                await ctx.send('Not a valid Minecraft world :-(')
+            else:
+                subprocess.run(['mv', path, SCRIPTS_PATH + '../Worlds/'])
+                await ctx.send(world + '\nImported successfully!')
+                await ctx.send('Use !selectworld \"' + world + '\" to select it.')
+        else:
+            await ctx.send('File was not a zip archive :-(')
+    except:
+        await ctx.send('Unable to download file from url :-(')
+        pass
+    subprocess.run(['rm', '-rf', SCRIPTS_PATH + 'blorgle'])
+
 
 bot.run(TOKEN)
