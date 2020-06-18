@@ -46,7 +46,7 @@ async def on_message(message):
         return
     print(message.content)
     if message.content.lower().find('bob') >= 0:
-        await message.send('I live to serve.')
+        await message.channel.send('I live to serve.')
 
 @bot.event
 async def on_command_error(ctx, error):
