@@ -183,7 +183,7 @@ async def addworld(ctx, link):
             if world == '':
                 await ctx.send('Not a valid Minecraft world :-(')
             else:
-                subprocess.run(['mv', path, SCRIPTS_PATH + '../Worlds/'])
+                subprocess.run(['mv', path, SCRIPTS_PATH + '../Worlds/'], shell=True)
                 await ctx.send(world + '\nImported successfully!')
                 await ctx.send('Use !selectworld \"' + world + '\" to select it.')
         else:
