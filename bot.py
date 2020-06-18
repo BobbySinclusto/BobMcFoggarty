@@ -47,6 +47,8 @@ async def on_message(message):
     if message.author == bot.user:
         return
     print(message.content)
+    if message.content.lower().find('bob') >= 0:
+        await message.send('I live to serve.')
 
 @bot.event
 async def on_command_error(ctx, error):
