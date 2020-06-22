@@ -38,7 +38,7 @@ async def on_ready():
           f'{guild.name}(id: {guild.id})'
     )
 
-    members = '\n - '.join([member.name for member in guild.members])
+    members = '\n - '.join([str(member.id) + ' ' + member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
     game = discord.Game('ngrok')
     await bot.change_presence(status=discord.Status.online, activity=game)
@@ -59,10 +59,21 @@ async def on_message(message):
         questions = ['hey bob', 'who', 'what', 'when', 'where', 'why', 'how', 'which']
         if any(q in msg for q in questions):
             try:
-                res = wolfram_client.query(msg.replace('hey bob', '').replace(', bob', '').replace('bob', '').replace('?', ''))
-                await message.channel.send(next(res.results).text)
+                msg = msg.replace('hey bob', '').replace(', bob', '').replace('bob', '').replace('?', '') 
+                res = wolfram_client.query(msg)
+                await message.channel.send(next(res.results).text.replace('Wolfram|Alpha', 'Bob McFoggarty'))
             except:
-                await message.channel.send('I\'m not sure I understand. Here\'s a fun fact instead:\nDid you know ' + random.choice(funfacts))
+                members = [133636765649993729, 236675869643505665, 346401802910040076, 348596653735018496, 472165066670735363, 487262355546177536, 604427812895588363]
+                opt = random.randrange(3)
+                if opt == 0:
+                    await message.channel.send('No idea. Come up with a better question and try again lol\nDid you know ' + random.choice(funfacts))
+                elif opt == 1:
+                    await message.channel.send('You\'ll have to ask ' + '<@' + str(random.choice(members)) + '> on that one')
+                else:
+                    if 'is' in msg:
+                        await message.channel.send('I don\'t know, ' + msg.replace('is', '***is***' + '???'))
+                    else:
+                        await message.channel.send('Sorry, I\'ve got better things to do right now')
         else:
             answers = ['I live to serve.', 'I aim to please.', 'I\'m a bot. beep boop.']
             await message.channel.send(random.choice(answers))
