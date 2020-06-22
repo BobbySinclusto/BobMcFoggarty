@@ -54,11 +54,18 @@ async def on_message(message):
     if message.author == bot.user:
         return
     print(message.content)
-    if message.content.lower().find('hey bob') >= 0 or message.content.lower().find('bob?') >= 0:
-        res = wolfram_client.query(message.content.lower().replace('hey bob', '').replace('bob?', '').strip())
-        await message.channel.send(next(res.results).text)
-    elif message.content.lower().find('bob') >= 0:
-        await message.channel.send('I live to serve.')
+    msg = message.content.lower()
+    if 'bob' in msg:
+        questions = ['hey bob', 'who', 'what', 'when', 'where', 'why', 'how', 'which']
+        if any(q in msg for q in questions):
+            try:
+                res = wolfram_client.query(msg.replace('hey bob', '').replace(', bob', '').replace('bob', '').replace('?', ''))
+                await message.channel.send(next(res.results).text)
+            except:
+                await message.channel.send('I\'m not sure I understand. Here\'s a fun fact instead:\nDid you know ' + random.choice(funfacts))
+        else:
+            answers = ['I live to serve.', 'I aim to please.', 'I\'m a bot. beep boop.']
+            await message.channel.send(random.choice(answers))
 
 @bot.event
 async def on_command_error(ctx, error):
