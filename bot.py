@@ -9,6 +9,7 @@ import time
 import random
 from discord.ext import commands
 from dotenv import load_dotenv
+import wolframalpha
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -16,6 +17,12 @@ GUILD = os.getenv('DISCORD_GUILD')
 SCRIPTS_PATH = os.getenv('SCRIPTS_PATH')
 SERVER_ADDRESS = os.getenv('SERVER_ADDRESS')
 SERVER_PORT = os.getenv('SERVER_PORT')
+WOLFRAM_API_KEY = os.getenv('WOLFRAM_API_KEY')
+
+try:
+    wolfram_client = wolframalpha.Client(WOLFRAM_API_KEY)
+except:
+    pass
 
 current_world = open(SCRIPTS_PATH + 'currentworld.txt', 'r').read().strip()
 funfacts = open('dyk.txt', 'r').readlines()
@@ -47,7 +54,10 @@ async def on_message(message):
     if message.author == bot.user:
         return
     print(message.content)
-    if message.content.lower().find('bob') >= 0:
+    if message.content.lower().find('hey bob') >= 0 or message.content.lower().find('bob?') >= 0:
+        res = wolfram_client.query(message.content.lower().replace('hey bob', '').replace('bob?', '').strip())
+        await message.channel.send(next(res.results).text)
+    elif message.content.lower().find('bob') >= 0:
         await message.channel.send('I live to serve.')
 
 @bot.event
