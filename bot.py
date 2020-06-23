@@ -56,7 +56,7 @@ async def on_message(message):
     print(message.content)
     msg = message.content.lower()
     if 'bob' in msg:
-        questions = ['hey bob', 'who', 'what', 'when', 'where', 'why', 'how', 'which']
+        questions = ['hey bob', '?', 'who', 'what', 'when', 'where', 'why', 'how', 'which']
         if any(q in msg for q in questions):
             try:
                 msg = msg.replace('hey bob', '').replace(', bob', '').replace('bob', '').replace('?', '') 
