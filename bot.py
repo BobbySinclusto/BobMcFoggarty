@@ -71,7 +71,7 @@ async def on_message(message):
                     await message.channel.send('You\'ll have to ask ' + '<@' + str(random.choice(members)) + '> on that one')
                 else:
                     if 'is' in msg:
-                        await message.channel.send('I don\'t know, ' + msg.replace('is', '***is***' + '???'))
+                        await message.channel.send('I don\'t know, ' + msg.replace('is', '***is***') + '???')
                     else:
                         await message.channel.send('Sorry, I\'ve got better things to do right now')
         else:
