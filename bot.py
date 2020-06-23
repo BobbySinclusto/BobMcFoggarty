@@ -59,7 +59,7 @@ async def on_message(message):
         questions = ['hey bob', '?', 'who', 'what', 'when', 'where', 'why', 'how', 'which']
         if any(q in msg for q in questions):
             try:
-                msg = msg.replace('hey bob', '').replace(', bob', '').replace('bob', '').replace('?', '') 
+                msg = msg.replace('hey bob', '').replace('hey bob, ', '').replace(', bob', '').replace('bob', '').replace('?', '') 
                 res = wolfram_client.query(msg)
                 await message.channel.send(next(res.results).text.replace('Wolfram|Alpha', 'Bob McFoggarty'))
             except:
