@@ -37,3 +37,9 @@ GOOGLE_SE_ID=custom_search_engine_id
 ```
 
 For instructions on how to obtain the various api keys and stuff, see the prerequisites section.
+
+## Running
+Run the bot using
+```bash
+python3 bot.py
+```
