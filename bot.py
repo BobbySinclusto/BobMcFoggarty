@@ -10,6 +10,7 @@ import random
 from discord.ext import commands
 from dotenv import load_dotenv
 import wolframalpha
+import ctypes
 
 import asyncio
 import threading
@@ -46,6 +47,7 @@ current_players = set()
 waiting_command_response = False
 cmd_ctx = None
 waiting_for_start = False
+waiting_for_stop = False
 
 bot = commands.Bot(command_prefix='!')
 @bot.event
@@ -72,12 +74,13 @@ def google_search(search_term, api_key, cse_id, **kwargs):
 
 @bot.event
 async def on_message(message):
+    global addr
     await bot.process_commands(message)
     if message.author == bot.user:
         return
     print(message.content)
     #if message.channel.id == 789625114769621003:
-    if message.channel.id == 761382066360680448:
+    if message.channel.id == 836413232700719105:
         # send a message on the minecraft server
         if addr != '':
             server_process.stdin.write(('/tellraw @a {\"text\":\"<' + message.author.display_name + ' (Discord)> ' + message.content + '\"}\n').encode())
@@ -235,60 +238,63 @@ async def output_reader(proc, loop):
     global waiting_command_response
     global cmd_ctx
     global waiting_for_start
+    global waiting_for_stop
+    global addr
 
     message = None
     io_pool_exc = ThreadPoolExecutor()
 
     while True:
-        line = await loop.run_in_executor(io_pool_exc, proc.stdout.readline)
-
-        current = line.decode('utf-8')
-
-        if not bot.is_closed():
-            player_message = re.search(r'^\[.*\] \[.*\]: (<.*>.*)$', current)
-            if player_message != None:
-                #await bot.get_channel(789625114769621003).send(player_message.groups()[0])
-                await bot.get_channel(761382066360680448).send(player_message.groups()[0])
-
-            player_joined = re.search(r': (.*) joined the game', current)
-            if player_joined != None:
-                #await bot.get_channel(789625114769621003).send(player_joined.groups()[0] + ' joined the game')
-                await bot.get_channel(761382066360680448).send(player_joined.groups()[0] + ' joined the game')            
-                try:
-                    current_players.add(player_joined.groups()[0])
-                except:
-                    pass
-
-            player_left = re.search(r': (.*) left the game', current)
-            if player_left != None:
-                #await bot.get_channel(789625114769621003).send(player_left.groups()[0] + ' left the game')
-                await bot.get_channel(761382066360680448).send(player_left.groups()[0] + ' left the game')
-                try:
-                    current_players.remove(player_left.groups()[0])
-                except:
-                    pass
-
-            if waiting_command_response:
-                waiting_command_response = False
-                await cmd_ctx.send(current)
-
-            if waiting_for_start and message == None:
-                message = await cmd_ctx.send('```m\n' + current + '```')
-            elif waiting_for_start:
-                await message.edit(content=('```m\n' + current + '```'))
-                if re.search(r'Done \(.*\)!', current):
-                    waiting_for_start = False
-                    message = None
-                    await cmd_ctx.send('Success! Server address: ' + addr + '\n\nIf you are at Austin\'s house, use 192.168.0.113:25566')
-                
-
-        print(current, end='')
-
-def input_handler(proc):
-    while True:
         try:
-            proc.stdin.write((input() + '\n').encode())
-            proc.stdin.flush()
+            if waiting_for_stop:
+                waiting_for_stop = False
+                return
+            line = await loop.run_in_executor(io_pool_exc, proc.stdout.readline)
+
+            current = line.decode('utf-8')
+
+            if not bot.is_closed():
+                player_message = re.search(r'^\[.*\] \[.*\]: (<.*>.*)$', current)
+                if player_message != None:
+                    #await bot.get_channel(789625114769621003).send(player_message.groups()[0])
+                    #await bot.get_channel(761382066360680448).send(player_message.groups()[0])
+                    await bot.get_channel(836413232700719105).send(player_message.groups()[0])
+
+                player_joined = re.search(r': (.*) joined the game', current)
+                if player_joined != None:
+                    #await bot.get_channel(789625114769621003).send(player_joined.groups()[0] + ' joined the game')
+                    #await bot.get_channel(761382066360680448).send(player_joined.groups()[0] + ' joined the game')            
+                    await bot.get_channel(836413232700719105).send(player_joined.groups()[0] + ' joined the game')            
+                    try:
+                        current_players.add(player_joined.groups()[0])
+                    except:
+                        pass
+
+                player_left = re.search(r': (.*) left the game', current)
+                if player_left != None:
+                    #await bot.get_channel(789625114769621003).send(player_left.groups()[0] + ' left the game')
+                    #await bot.get_channel(761382066360680448).send(player_left.groups()[0] + ' left the game')
+                    await bot.get_channel(836413232700719105).send(player_left.groups()[0] + ' left the game')
+                    try:
+                        current_players.remove(player_left.groups()[0])
+                    except:
+                        pass
+
+                if waiting_command_response:
+                    waiting_command_response = False
+                    await cmd_ctx.send(current)
+
+                if waiting_for_start and message == None:
+                    message = await cmd_ctx.send('```m\n' + current + '```')
+                elif waiting_for_start:
+                    await message.edit(content=('```m\n' + current + '```'))
+                    if re.search(r'Done \(.*\)!', current):
+                        waiting_for_start = False
+                        message = None
+                        await cmd_ctx.send('Success! Server address: ' + addr)
+                    
+
+            print(current, end='')
         except:
             return
 
@@ -306,11 +312,12 @@ async def startserver(ctx):
     await ctx.send('Starting server...')
         
     server_process = subprocess.Popen(['java', '-Xmx10g', '-Xms10g', '-jar', 'server.jar', 'nogui'], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    
+    print('opened process')
+
     bot.loop.create_task(output_reader(server_process, bot.loop))
+    print('output_reader created')
     #bot.loop.create_task(my_background_task(ctx, server_process))
-    input_thread = threading.Thread(target=input_handler, args=(server_process,))
-    input_thread.start()
+    # there used to be an input thread here but it was causing problems so I removed it
 
     if SERVER_ADDRESS == None:
         ngrok_process = subprocess.Popen([SCRIPTS_PATH + 'ngrok', 'tcp', str(SERVER_PORT)], cwd=SCRIPTS_PATH, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -355,6 +362,38 @@ async def sendmccommand(ctx, *args):
     except Exception as e:
         print(e)
 
+@bot.command(name='currentconfig', help='Displays the current server config')
+async def currentconfig(ctx):
+    await ctx.send('```sh\n'+''.join(open(SCRIPTS_PATH + 'server.properties').readlines())+'```')
+
+@bot.command(name='updateconfig', help='Updates server.properties')
+async def updateconfig(ctx, *args):
+    try:
+        # get current properties
+        p_file = open(SCRIPTS_PATH + 'server.properties', 'r')
+        header = p_file.readline()
+        header += p_file.readline()
+        properties = {key:value for key, value in [line.split('=') for line in p_file.readlines()]}
+        p_file.close()
+
+        for key in properties:
+            if key == args[0]:
+                properties[key] = ' '.join(args[1:]) + '\n'
+                p_file = open(SCRIPTS_PATH + 'server.properties', 'w')
+                p_file.write(header + ''.join([key + '=' + properties[key] for key in properties]))
+                p_file.close()
+                await ctx.send('Successfully updated `' + key + '` to `' + ' '.join(args[1:]) + '`!')
+                return
+        
+        await ctx.send('Invalid config item: `' + args[0] + '`')
+        
+    except Exception as e:
+        print(e)
+        await ctx.send('You done made an oops in that command buddy. Try again')
+    
+
+
+
 
 @bot.command(name='currentworld', help='Displays the currently selected world')
 async def currentworld(ctx):
@@ -362,37 +401,46 @@ async def currentworld(ctx):
 
 @bot.command(name='serveraddress', help='Displays the server address')
 async def serveraddress(ctx):
+    global addr
     if addr == '':
         await ctx.send('The server is not running yet. Use !startserver to start it!')
     else:
-        await ctx.send(addr + '\n\nIf you are at Austin\'s house, use 192.168.0.113:25566')
+        await ctx.send(addr)
+
+@bot.command(name='saveworld', help='Backs up the current world to the world in the list')
+async def saveworld(ctx):
+    subprocess.call('rm -rf ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '.bak', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
+    subprocess.call('cp -r ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + ' ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '.bak', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
+    subprocess.call('rm -rf ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '/*', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
+    subprocess.call('cp -r ' + SCRIPTS_PATH + 'world/* ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '/', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
+    await ctx.send('World backed up successfully!')
 
 @bot.command(name='stopserver', help='Stops the server')
 async def stopserver(ctx):
     global addr
     global current_players
+    global waiting_for_stop
+    waiting_for_stop = True
     current_players = set()
     try:
         server_process.communicate(input=b'/stop\n')
+        '''
         if SERVER_ADDRESS == None:
             ngrok_process.terminate()
+        '''
         addr = ''
+
         await ctx.send('Server stopped.')
         if current_world == 'newworld':
-            subprocess.call('rm -rf ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '.bak', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
-            subprocess.call('cp -r ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + ' ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '.bak', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
-            subprocess.call('rm -rf ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '/*', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
-            subprocess.call('cp -r ' + SCRIPTS_PATH + 'world/* ' + SCRIPTS_PATH + '../Worlds/' + current_world.replace(' ', '\\ ').replace('\'', '\\\'') + '/', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True) 
-            await ctx.send('World backed up successfully!')
-    except:
+            await saveworld(ctx)
+    except Exception as e:
+        print(e)
         await ctx.send('You can\'t stop a server that hasn\'t been started. Use !startserver to start the server!')
 
-@bot.command(name='resetworld', help='Resets world to its original state')
+@bot.command(name='resetworld', help='Resets world to its last saved state')
 async def resetworld(ctx):
     global server_process
-    if current_world == 'newworld':
-        await ctx.send('Sorry, you can\'t do that on this world')
-        return
+    global addr
     await ctx.send('Resetting the world...')
     try:
         server_process.communicate(input=b'/stop\n')
@@ -421,27 +469,32 @@ async def listworlds(ctx):
 
 @bot.command(name='selectworld', help='Selects a world, by world name or world number. Use double quotes around a world name, or a world number from the list of worlds.')
 async def selectworld(ctx, world):
-    global current_world
-    p = subprocess.run(['ls', SCRIPTS_PATH + '../Worlds/'], stdout=subprocess.PIPE)
-    worlds = p.stdout.decode("utf-8").split('\n')
-
-    idx = -1
     try:
-        idx = int(world) - 1
-    except:
-        for i in range(len(worlds)-1):
-            if world == worlds[i]:
-                idx = i
+        global current_world
+        p = subprocess.run(['ls', SCRIPTS_PATH + '../Worlds/'], stdout=subprocess.PIPE)
+        worlds = p.stdout.decode("utf-8").split('\n')
 
-    if idx < 0 or idx > len(worlds) - 2:
-        await ctx.send('Invalid input.')
-    else:
-        current_world = worlds[idx]
-        f = open(SCRIPTS_PATH + 'currentworld.txt', 'w')
-        f.write(worlds[idx])
-        await ctx.send('Selected world: ' + worlds[idx])
-        await resetworld(ctx)
-        print('select world')
+        idx = -1
+        try:
+            idx = int(world) - 1
+        except:
+            for i in range(len(worlds)-1):
+                if world == worlds[i]:
+                    idx = i
+
+        if idx < 0 or idx > len(worlds) - 2:
+            await ctx.send('Invalid input.')
+        else:
+            if current_world == 'newworld':
+                await saveworld(ctx)
+            current_world = worlds[idx]
+            f = open(SCRIPTS_PATH + 'currentworld.txt', 'w')
+            f.write(worlds[idx])
+            await ctx.send('Selected world: ' + worlds[idx])
+            await resetworld(ctx)
+            print('select world')
+    except Exception as e:
+        print(e)
 
 @bot.command(name='addworld', help='Adds a world from a link to a zip file.')
 async def addworld(ctx, link):
